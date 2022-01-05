@@ -78,7 +78,7 @@
   * ```?``` can be placed aftes the function to quickly acquire the value 
     from ```Ok``` or return the error for ```Err``` without using ```match```
    ```
-   // f will be the file it Ok 
+   // f will be the file if Ok 
    // otherwise the function returns the error 
    let f = File::open("username.txt")?;
    let dummy = 0; // this code will not execute if File::open() failed
