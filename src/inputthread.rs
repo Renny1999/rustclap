@@ -12,7 +12,7 @@ pub fn input_thread (buffer : &mut[f32]){
 
     let devices : Vec<cpal::Device> = devices.collect();
 
-//    for d in devices.iter() {
+    //    for d in devices.iter() {
     println!("Select the input device:");
     for num in 0..(&devices).len() {
         let d = &devices[num as usize];
@@ -22,7 +22,7 @@ pub fn input_thread (buffer : &mut[f32]){
         };
         println!("{}\t{}", num, name);
     }
-    
+
     let mut selection = String::new();
     std::io::stdin().read_line(&mut selection).unwrap();
     println!("User input : {}", selection); 
@@ -33,23 +33,36 @@ pub fn input_thread (buffer : &mut[f32]){
     let device = &devices[selection as usize];
     let mut supported_configs_range = device.supported_input_configs()
                                             .expect("error while qusrying configs");
-   // let supported_configs = supported_configs_range.next()
-   //                         .expect("no supported config?!")
-   //                         .with_max_sample_rate();
-   // 
+    // let supported_configs = supported_configs_range.next()
+    //                         .expect("no supported config?!")
+    //                         .with_max_sample_rate();
+    // 
     for config in supported_configs_range {
         let channels = config.channels();
         let min_fs = config.min_sample_rate();
         let max_fs = config.max_sample_rate();
-        let buffer_size = config.buffer_size();
-        let sample_format = config.sample_format();
 
-        println!("channels: {}\nmix fs: {}\nmax fs: {}", channels, min_fs.0, max_fs.0);
+        let mut buffer_size = [0,0];
+        match config.buffer_size() {
+            cpal::SupportedBufferSize::Range{min, max} 
+            => {
+                    buffer_size[0] = *min;
+                    buffer_size[1] = *max;
+                    println!("{}", min);
+                    println!("{}", max);
+            },
+            cpal::SupportedBufferSize::Unknown 
+            => {
+                println!("unknown buffer size");
+            },
+        };
+        let sample_format = match config.sample_format() {
+            cpal::SampleFormat::I16 => "I16",
+            cpal::SampleFormat::U16 => "U16",
+            cpal::SampleFormat::F32 => "F32",
+        };
+
+        println!("channels: {}\nmix fs: {}\nmax fs: {}\nformat : {}\nbuffer min : {}\nbuffer max : {}"
+            , channels, min_fs.0, max_fs.0, sample_format, buffer_size[0], buffer_size[1]);
     }
-//    let stream = device.build_input_stream(
-//            &config,
-//
-//
-//        );
-
 }
