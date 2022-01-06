@@ -75,19 +75,35 @@ pub fn input_thread (buffer : &mut[f32]){
     println!("User input : {}", selection); 
     let selected_config = &supported_configs_range[selection as usize];
     let config : cpal::StreamConfig = cpal::StreamConfig{
-        channels : selected_config.channels(),
-        sample_rate: selected_config.max_sample_rate(),
+        //channels : selected_config.channels(),
+        //sample_rate: selected_config.max_sample_rate(),
+        //buffer_size: cpal::BufferSize::Fixed(512),
+        channels : 1,
+        sample_rate: cpal::SampleRate(48000),
         buffer_size: cpal::BufferSize::Fixed(512),
     };
 
     let stream = device.build_input_stream (
         &config,
+        //do_something,
         move |data : &[f32], _: &_| {
             // do something
+            println!("hello");
         }, 
         move |err| {
             // react to errors here
-            panic!();
+            panic!("{}", err);
         },
-    );
+    ).unwrap();
+    println!("stream created");
+
+    
+    let res = match stream.play(){
+        Ok(_) => {},
+        Err(err) => panic!("{}",err), 
+    };
 }
+
+fn do_something (data: &[f32], _: &cpal::InputCallbackInfo) {
+    // do something here
+} 

@@ -83,3 +83,4 @@
    let f = File::open("username.txt")?;
    let dummy = 0; // this code will not execute if File::open() failed
    ```
+*
