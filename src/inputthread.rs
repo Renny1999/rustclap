@@ -37,7 +37,11 @@ pub fn input_thread (buffer : &mut[f32]){
     //                         .expect("no supported config?!")
     //                         .with_max_sample_rate();
     // 
-    for config in supported_configs_range {
+    let supported_configs_range: Vec<cpal::SupportedStreamConfigRange> = supported_configs_range.collect();
+    let i = 0;
+    for i in 0..supported_configs_range.len(){ 
+ //    for config in supported_configs_range {
+        let config = &supported_configs_range[i];    
         let channels = config.channels();
         let min_fs = config.min_sample_rate();
         let max_fs = config.max_sample_rate();
@@ -52,9 +56,7 @@ pub fn input_thread (buffer : &mut[f32]){
                     println!("{}", max);
             },
             cpal::SupportedBufferSize::Unknown 
-            => {
-                println!("unknown buffer size");
-            },
+            => {},
         };
         let sample_format = match config.sample_format() {
             cpal::SampleFormat::I16 => "I16",
@@ -62,7 +64,30 @@ pub fn input_thread (buffer : &mut[f32]){
             cpal::SampleFormat::F32 => "F32",
         };
 
-        println!("channels: {}\nmix fs: {}\nmax fs: {}\nformat : {}\nbuffer min : {}\nbuffer max : {}"
-            , channels, min_fs.0, max_fs.0, sample_format, buffer_size[0], buffer_size[1]);
+        println!("config {}\n\tchannels: {}\n\tmix fs: {}\n\tmax fs: {}\n\tformat : {}\n\tbuffer min : {}\n\tbuffer max : {}"
+            , i, channels, min_fs.0, max_fs.0, sample_format, buffer_size[0], buffer_size[1]);
     }
+        
+    println!("Select a config :"); 
+    let mut selection = String::new();
+    std::io::stdin().read_line(&mut selection).unwrap();
+    let selection = selection.trim().parse::<u32>().unwrap();
+    println!("User input : {}", selection); 
+    let selected_config = &supported_configs_range[selection as usize];
+    let config : cpal::StreamConfig = cpal::StreamConfig{
+        channels : selected_config.channels(),
+        sample_rate: selected_config.max_sample_rate(),
+        buffer_size: cpal::BufferSize::Fixed(512),
+    };
+
+    let stream = device.build_input_stream (
+        &config,
+        move |data : &[f32], _: &_| {
+            // do something
+        }, 
+        move |err| {
+            // react to errors here
+            panic!();
+        },
+    );
 }
