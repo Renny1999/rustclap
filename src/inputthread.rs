@@ -12,7 +12,6 @@ pub fn input_thread (buffer : &mut[f32]){
 
     let devices : Vec<cpal::Device> = devices.collect();
 
-    //    for d in devices.iter() {
     println!("Select the input device:");
     for num in 0..(&devices).len() {
         let d = &devices[num as usize];
@@ -30,15 +29,11 @@ pub fn input_thread (buffer : &mut[f32]){
     let selection = selection.trim().parse::<u32>().unwrap();
     println!("User selected {}", selection);
 
-    let device = &devices[selection as usize];
-    let mut supported_configs_range = device.supported_input_configs()
+    let device = &devices[selection as usize];  
+    println!("{}", device.name().unwrap());
+    let supported_configs_range = device.supported_input_configs()
                                             .expect("error while qusrying configs");
-    // let supported_configs = supported_configs_range.next()
-    //                         .expect("no supported config?!")
-    //                         .with_max_sample_rate();
-    // 
     let supported_configs_range: Vec<cpal::SupportedStreamConfigRange> = supported_configs_range.collect();
-    let i = 0;
     for i in 0..supported_configs_range.len(){ 
  //    for config in supported_configs_range {
         let config = &supported_configs_range[i];    
@@ -69,25 +64,24 @@ pub fn input_thread (buffer : &mut[f32]){
     }
         
     println!("Select a config :"); 
+
     let mut selection = String::new();
     std::io::stdin().read_line(&mut selection).unwrap();
     let selection = selection.trim().parse::<u32>().unwrap();
+
     println!("User input : {}", selection); 
+
     let selected_config = &supported_configs_range[selection as usize];
     let config : cpal::StreamConfig = cpal::StreamConfig{
-        //channels : selected_config.channels(),
-        //sample_rate: selected_config.max_sample_rate(),
-        //buffer_size: cpal::BufferSize::Fixed(512),
-        channels : 1,
-        sample_rate: cpal::SampleRate(48000),
-        buffer_size: cpal::BufferSize::Fixed(512),
+        channels : selected_config.channels(),
+        sample_rate: selected_config.max_sample_rate(),
+        buffer_size: cpal::BufferSize::Default, // only this worked
     };
 
     let stream = device.build_input_stream (
-        &config,
-        //do_something,
+        &config.into(),
         move |data : &[f32], _: &_| {
-            // do something
+            // pass data to main thread or clap detection thread
             println!("hello");
         }, 
         move |err| {
@@ -96,14 +90,16 @@ pub fn input_thread (buffer : &mut[f32]){
         },
     ).unwrap();
     println!("stream created");
-
     
     let res = match stream.play(){
-        Ok(_) => {},
+        Ok(_) => {println!("should be playing at this time")},
         Err(err) => panic!("{}",err), 
     };
+    
+    std::thread::sleep(std::time::Duration::from_secs(10));
 }
 
 fn do_something (data: &[f32], _: &cpal::InputCallbackInfo) {
     // do something here
 } 
+
