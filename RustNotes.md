@@ -97,6 +97,23 @@
                     mutate state
   * EXAMPLE
     * the code below takes two closures as callback functions 
+      ```
+        let path = "output.raw";
+        let mut output = File::create(path).unwrap();
+        let stream = device.build_input_stream (
+            &config.into(),
+            |data : &[f32], _: &_| {
+                match write_vec(&mut output, data) {
+                    Ok(_) => {println!("write to file successful")}, 
+                    Err(_) => {panic!("error writing to file")},
+                }
+            }, 
+            move |err| {
+                // react to errors here
+                panic!("{}", err);
+            },
+        ).unwrap();
+      ```
     * the code compiles with the error:
       ```
             error[E0373]: closure may outlive the current function, but it borrows `output`, which is owned by the current function
@@ -125,20 +142,3 @@
       91  |         move |data : &[f32], _: &_| {
           |         ++++
       ```
-  ```
-    let path = "output.raw";
-    let mut output = File::create(path).unwrap();
-    let stream = device.build_input_stream (
-        &config.into(),
-        |data : &[f32], _: &_| {
-            match write_vec(&mut output, data) {
-                Ok(_) => {println!("write to file successful")}, 
-                Err(_) => {panic!("error writing to file")},
-            }
-        }, 
-        move |err| {
-            // react to errors here
-            panic!("{}", err);
-        },
-    ).unwrap();
-  ```
