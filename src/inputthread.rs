@@ -1,6 +1,9 @@
 extern crate cpal;
 use cpal::traits::HostTrait;
 use cpal::traits::*;
+use std::io::Error;
+use std::fs::File;
+use std::io::Write;
 
 pub fn input_thread (buffer : &mut[f32]){
     let host = cpal::default_host();
@@ -33,9 +36,12 @@ pub fn input_thread (buffer : &mut[f32]){
     println!("{}", device.name().unwrap());
     let supported_configs_range = device.supported_input_configs()
                                             .expect("error while qusrying configs");
-    let supported_configs_range: Vec<cpal::SupportedStreamConfigRange> = supported_configs_range.collect();
+     
+    // store the supported configs in a vector  
+    let supported_configs_range: Vec<cpal::SupportedStreamConfigRange> 
+                        = supported_configs_range.collect();
+
     for i in 0..supported_configs_range.len(){ 
- //    for config in supported_configs_range {
         let config = &supported_configs_range[i];    
         let channels = config.channels();
         let min_fs = config.min_sample_rate();
@@ -78,11 +84,16 @@ pub fn input_thread (buffer : &mut[f32]){
         buffer_size: cpal::BufferSize::Default, // only this worked
     };
 
+    let path = "output.raw";
+    let mut output = File::create(path).unwrap();
     let stream = device.build_input_stream (
         &config.into(),
-        move |data : &[f32], _: &_| {
+        |data : &[f32], _: &_| {
             // pass data to main thread or clap detection thread
-            println!("hello");
+            match write_vec(&mut output, data) {
+                Ok(_) => {println!("write to file successful")}, 
+                Err(_) => {panic!("error writing to file")},
+            }
         }, 
         move |err| {
             // react to errors here
@@ -90,7 +101,6 @@ pub fn input_thread (buffer : &mut[f32]){
         },
     ).unwrap();
     println!("stream created");
-    
     let res = match stream.play(){
         Ok(_) => {println!("should be playing at this time")},
         Err(err) => panic!("{}",err), 
@@ -99,7 +109,14 @@ pub fn input_thread (buffer : &mut[f32]){
     std::thread::sleep(std::time::Duration::from_secs(10));
 }
 
-fn do_something (data: &[f32], _: &cpal::InputCallbackInfo) {
-    // do something here
-} 
+fn write_vec(file: &mut File, samples: &[f32]) -> Result<(), std::io::Error> {
+    let samples_u8 = unsafe {
+        std::slice::from_raw_parts(
+            samples.as_ptr() as *const u8,
+            samples.len() * std::mem::size_of::<f32>(),
+        )
+    };
+    file.write_all(samples_u8)
+}
+
 

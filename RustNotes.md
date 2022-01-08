@@ -83,4 +83,62 @@
    let f = File::open("username.txt")?;
    let dummy = 0; // this code will not execute if File::open() failed
    ```
-*
+* Closures
+  * closure is an anonymous function
+  ```
+    |parameter1, parameter2| {
+      // function body  
+    }
+  ```
+  * closure has 3 types:
+    * ```FnOnce```: the closure can be executed only once
+    * ```Fn```: the closure can be called multiple times without mutating state
+    * ```FnMut```: the closure can be executed multiple times and can 
+                    mutate state
+  * EXAMPLE
+    * the code below takes two closures as callback functions 
+    * the code compiles with the error:
+      ```
+            error[E0373]: closure may outlive the current function, but it borrows `output`, which is owned by the current function
+         --> src\inputthread.rs:91:9
+          |
+      91  |         |data : &[f32], _: &_| {
+          |         ^^^^^^^^^^^^^^^^^^^^^^ may outlive borrowed value `output`
+      92  |             // pass data to main thread or clap detection thread
+      93  |             match write_vec(&mut output, data) {
+          |                                  ------ `output` is borrowed here
+          |
+      note: function requires argument type to outlive `'static`
+         --> src\inputthread.rs:89:18
+          |
+      89  |       let stream = device.build_input_stream (
+          |  __________________^
+      90  | |         &config.into(),
+      91  | |         |data : &[f32], _: &_| {
+      92  | |             // pass data to main thread or clap detection thread
+      ...   |
+      101 | |         },
+      102 | |     ).unwrap();
+          | |_____^
+      help: to force the closure to take ownership of `output` (and any other referenced variables), use the `move` keyword
+          |
+      91  |         move |data : &[f32], _: &_| {
+          |         ++++
+      ```
+  ```
+    let path = "output.raw";
+    let mut output = File::create(path).unwrap();
+    let stream = device.build_input_stream (
+        &config.into(),
+        |data : &[f32], _: &_| {
+            match write_vec(&mut output, data) {
+                Ok(_) => {println!("write to file successful")}, 
+                Err(_) => {panic!("error writing to file")},
+            }
+        }, 
+        move |err| {
+            // react to errors here
+            panic!("{}", err);
+        },
+    ).unwrap();
+  ```
