@@ -114,8 +114,21 @@
             },
         ).unwrap();
       ```
-    * the code compiles with the error:
+    * where:
+    ```
+    fn build_input_stream_raw<D, E>(
+        &self,
+        config: &StreamConfig,
+        sample_format: SampleFormat,
+        data_callback: D,
+        error_callback: E
+    ) -> Result<Self::Stream, BuildStreamError>
+    where
+        D: FnMut(&Data, &InputCallbackInfo) + Send + 'static,
+        E: FnMut(StreamError) + Send + 'static,  
       ```
+      * the code compiles with the error:
+     ```
             error[E0373]: closure may outlive the current function, but it borrows `output`, which is owned by the current function
          --> src\inputthread.rs:91:9
           |
