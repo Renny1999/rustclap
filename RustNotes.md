@@ -77,19 +77,19 @@
   * can be matched with ```match```
   * ```?``` can be placed aftes the function to quickly acquire the value 
     from ```Ok``` or return the error for ```Err``` without using ```match```
-   ```
-   // f will be the file if Ok 
-   // otherwise the function returns the error 
-   let f = File::open("username.txt")?;
-   let dummy = 0; // this code will not execute if File::open() failed
-   ```
+    ```
+    // f will be the file if Ok 
+    // otherwise the function returns the error 
+    let f = File::open("username.txt")?;
+    let dummy = 0; // this code will not execute if File::open() failed
+    ```
 ## Closures & 'static
   * closure is an anonymous function
-  ```
+    ```
     |parameter1, parameter2| {
       // function body  
     }
-  ```
+    ```
   * closure has 3 types:
     * ```FnOnce```: the closure can be executed only once
     * ```Fn```: the closure can be called multiple times without mutating state
@@ -115,18 +115,18 @@
         ).unwrap();
       ```
     * where:
-    ```
-    fn build_input_stream_raw<D, E>(
-        &self,
-        config: &StreamConfig,
-        sample_format: SampleFormat,
-        data_callback: D,
-        error_callback: E
-    ) -> Result<Self::Stream, BuildStreamError>
-    where
-        D: FnMut(&Data, &InputCallbackInfo) + Send + 'static,
-        E: FnMut(StreamError) + Send + 'static,  
       ```
+      fn build_input_stream_raw<D, E>(
+          &self,
+          config: &StreamConfig,
+          sample_format: SampleFormat,
+          data_callback: D,
+          error_callback: E
+      ) -> Result<Self::Stream, BuildStreamError>
+      where
+          D: FnMut(&Data, &InputCallbackInfo) + Send + 'static,
+          E: FnMut(StreamError) + Send + 'static,  
+       ```
       * the code compiles with the error:
      ```
             error[E0373]: closure may outlive the current function, but it borrows `output`, which is owned by the current function

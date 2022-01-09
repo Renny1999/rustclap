@@ -2,10 +2,16 @@ extern crate cpal;
 use cpal::traits::HostTrait;
 use cpal::traits::*;
 use std::io::Error;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex, Condvar};
 use std::fs::File;
 use std::io::Write;
 
-pub fn input_thread (buffer : &mut[f32]){
+pub fn input_thread (exit: Arc::<AtomicBool>, proceed: Arc::<(Mutex<bool>, Condvar)>){
+    // acquire the mutex 
+    let (lock,condvar) = &*proceed;
+    let mut resume = lock.lock().unwrap();
+
     let host = cpal::default_host();
     let devices = host.input_devices();
     let devices = match devices {
@@ -84,6 +90,16 @@ pub fn input_thread (buffer : &mut[f32]){
         buffer_size: cpal::BufferSize::Default, // only this worked
     };
 
+    // input thread is done with user input, so now the main thread can 
+    // start asking for user input instead 
+    *resume = true;    
+    // wake up the main thread
+    condvar.notify_all();
+    // forcefully drop the lock, because otherwise the mutex will be unlock 
+    // at the end of the scope which we will never reach without giving main 
+    // the privilage to ask for user input
+    drop(resume);
+
     let path = "output.raw";
     let mut output = File::create(path).unwrap();
     let stream = device.build_input_stream (
@@ -91,7 +107,7 @@ pub fn input_thread (buffer : &mut[f32]){
         move |data : &[f32], _: &_| {
             // pass data to main thread or clap detection thread
             match write_vec(&mut output, data) {
-                Ok(_) => {println!("write to file successful")}, 
+                Ok(_) => {}, 
                 Err(_) => {panic!("error writing to file")},
             }
         }, 
@@ -105,8 +121,9 @@ pub fn input_thread (buffer : &mut[f32]){
         Ok(_) => {println!("should be playing at this time")},
         Err(err) => panic!("{}",err), 
     };
+    while !exit.load(Ordering::Relaxed){};
+        
     
-    std::thread::sleep(std::time::Duration::from_secs(10));
 }
 
 fn write_vec(file: &mut File, samples: &[f32]) -> Result<(), std::io::Error> {
