@@ -35,7 +35,7 @@
     for loop to iterate over it because as the for-loop will takes ownership
     of the iterator, it internally makes the iterator mutable.
     
-* enums
+## enums
   * example enum
     * ```Data1``` does not have any actual data associated with it
     * ```Data2``` has a ```char``` associated with it
@@ -66,13 +66,13 @@
   }
   ```
 
-* Option
+## Option
   * Option is something that either ```Some``` or is ```None```
   * ```Some``` has a value
   * ```None``` does not have a value
   * can be matched with ```match``` 
 
-* Result
+## Result
   * used for error handling 
   * can be matched with ```match```
   * ```?``` can be placed aftes the function to quickly acquire the value 
