@@ -155,3 +155,25 @@
       91  |         move |data : &[f32], _: &_| {
           |         ++++
       ```
+      * this error is happening because the main thread can exit before the 
+        audio thread that will be spawned by ```stream```
+      * if that happens, the audio thread will be using the ```output``` variable 
+        that has been freed by the main thread as the main thread exited
+        * this results in **use-after-free** memory safety violation
+      * to ensure memory safety the ```'static``` bound on 
+        ```
+        D: FnMut(&Data, &InputCallbackInfo) + Send + 'static,
+        ```
+        requires all variables in the closure to live for the entire lifetime 
+        of the program
+      * in this example, it means that ```output``` has to outlive the main 
+        thread
+      * in order to meet the ```'static``` constraint, we need the closure to 
+        have ownership of ```output```
+      * FIX
+        * for the reasons described above, move closures will solve the problem
+        ```
+        // ...
+        move |data : &[f32], _: &_| {
+        // ...
+        ```
