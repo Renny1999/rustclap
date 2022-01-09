@@ -83,7 +83,7 @@
    let f = File::open("username.txt")?;
    let dummy = 0; // this code will not execute if File::open() failed
    ```
-* Closures & 'static
+## Closures & 'static
   * closure is an anonymous function
   ```
     |parameter1, parameter2| {
