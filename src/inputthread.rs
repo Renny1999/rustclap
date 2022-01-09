@@ -88,7 +88,7 @@ pub fn input_thread (buffer : &mut[f32]){
     let mut output = File::create(path).unwrap();
     let stream = device.build_input_stream (
         &config.into(),
-        |data : &[f32], _: &_| {
+        move |data : &[f32], _: &_| {
             // pass data to main thread or clap detection thread
             match write_vec(&mut output, data) {
                 Ok(_) => {println!("write to file successful")}, 
@@ -101,7 +101,7 @@ pub fn input_thread (buffer : &mut[f32]){
         },
     ).unwrap();
     println!("stream created");
-    let res = match stream.play(){
+    let _res = match stream.play(){
         Ok(_) => {println!("should be playing at this time")},
         Err(err) => panic!("{}",err), 
     };

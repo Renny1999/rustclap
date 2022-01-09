@@ -83,7 +83,7 @@
    let f = File::open("username.txt")?;
    let dummy = 0; // this code will not execute if File::open() failed
    ```
-* Closures
+* Closures & 'static
   * closure is an anonymous function
   ```
     |parameter1, parameter2| {
@@ -177,3 +177,12 @@
         move |data : &[f32], _: &_| {
         // ...
         ```
+      * P.S. 
+        * if the closure does not borrow any value from the main thread, then
+          the error would not have happened
+          * this code is fine
+            ```
+            |data : &[f32], _: &_| {
+                // doing nothing
+            }, 
+            ```
