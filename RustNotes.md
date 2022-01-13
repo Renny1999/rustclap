@@ -1,3 +1,25 @@
+## ownerships
+* reference
+  * (shared/mutable) referencs to a struct object
+    * when I have a (shared/mutable) referencs to a struct object, **remember**
+      that essentially, we have a pointer to that object.
+    * this means that if we access a member of that object, by default, we
+      are not borrowing the member.
+    * Example:
+        * as you can see, `obj_ref` is just a pointer to `obj`, 
+          and `let obj_ref_vec = objb.v;` will not work because it is trying 
+          to move an unowned nor borrowed value (`obj.v`) to `obj_ref_vec` 
+      ```
+      pub struct Obj {
+          v: Vec<f32>,
+      }
+      
+      fn main() {
+          let mut obj = Obj{v: vec![0.0]};
+          let obj_ref = &mut obj;
+          let obj_ref_vec = objb.v; // error: consider borrowing here: `&obj_ref.v` 
+      }
+      ```
 ## for loops
 * iterators:
   * if I have a iterator ```iter``` and I wanted to loop over the elements in 

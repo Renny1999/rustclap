@@ -44,7 +44,7 @@ pub fn input_thread (exit: Arc::<AtomicBool>, proceed: Arc::<(Mutex<bool>, Condv
                                             .expect("error while qusrying configs");
      
     // store the supported configs in a vector  
-    let supported_configs_range: Vec<cpal::SupportedStreamConfigRange> 
+    let supported_configs_range: V<cpal::SupportedStreamConfigRange> 
                         = supported_configs_range.collect();
 
     for i in 0..supported_configs_range.len(){ 
