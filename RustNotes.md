@@ -7,7 +7,7 @@
       are not borrowing the member.
     * Example:
         * as you can see, `obj_ref` is just a pointer to `obj`, 
-          and `let obj_ref_vec = objb.v;` will not work because it is trying 
+          and `let obj_ref_vec = obj_ref.v;` will not work because it is trying 
           to move an unowned nor borrowed value (`obj.v`) to `obj_ref_vec` 
       ```
       pub struct Obj {
