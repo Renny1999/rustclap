@@ -2,14 +2,39 @@ extern crate cpal;
 use cpal::traits::HostTrait;
 use cpal::traits::*;
 use std::io::Error;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, Condvar};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{sync_channel};
+
 use std::fs::File;
 use std::io::Write;
 
-pub fn input_thread (exit: Arc::<AtomicBool>, proceed: Arc::<(Mutex<bool>, Condvar)>){
+pub struct Packet {
+    pub data: Vec::<f32>,
+}
+
+impl Packet {
+    fn from_slice(slice: &[f32]) -> Self {
+        let mut mydata = Vec::<f32>::new();
+        for d in slice {
+            mydata.push(*d);
+        }
+        Packet { data: mydata } 
+    }  
+}
+
+pub enum InputData<'a> {
+    Data(&'a[f32]),
+}
+
+pub fn input_thread (
+    exit: Arc::<AtomicBool>, 
+    main_ready: Arc::<(Mutex<bool>, Condvar)>, 
+    tx: std::sync::mpsc::SyncSender<Packet>
+)
+{
     // acquire the mutex 
-    let (lock,condvar) = &*proceed;
+    let (lock,condvar) = &*main_ready;
     let mut resume = lock.lock().unwrap();
 
     let host = cpal::default_host();
@@ -44,7 +69,7 @@ pub fn input_thread (exit: Arc::<AtomicBool>, proceed: Arc::<(Mutex<bool>, Condv
                                             .expect("error while qusrying configs");
      
     // store the supported configs in a vector  
-    let supported_configs_range: V<cpal::SupportedStreamConfigRange> 
+    let supported_configs_range: Vec::<cpal::SupportedStreamConfigRange> 
                         = supported_configs_range.collect();
 
     for i in 0..supported_configs_range.len(){ 
@@ -100,16 +125,19 @@ pub fn input_thread (exit: Arc::<AtomicBool>, proceed: Arc::<(Mutex<bool>, Condv
     // the privilage to ask for user input
     drop(resume);
 
-    let path = "output.raw";
-    let mut output = File::create(path).unwrap();
+    //let path = "output.raw";
+    //let mut output = File::create(path).unwrap();
+    let clonedtx = tx.clone();
     let stream = device.build_input_stream (
         &config.into(),
         move |data : &[f32], _: &_| {
-            // pass data to main thread or clap detection thread
-            match write_vec(&mut output, data) {
-                Ok(_) => {}, 
-                Err(_) => {panic!("error writing to file")},
-            }
+            // pass data clap detection thread
+            tx.send(Packet::from_slice(data));
+
+            //match write_vec(&mut output, data) {
+            //    Ok(_) => {}, 
+            //    Err(_) => {panic!("error writing to file")},
+            //}
         }, 
         move |err| {
             // react to errors here
@@ -135,5 +163,4 @@ fn write_vec(file: &mut File, samples: &[f32]) -> Result<(), std::io::Error> {
     };
     file.write_all(samples_u8)
 }
-
 

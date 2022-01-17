@@ -1,14 +1,19 @@
-use inputthread::input_thread;
 use std::sync::{Arc, Mutex, Condvar};
 use std::sync::atomic::{AtomicBool,Ordering};
+use std::sync::mpsc::sync_channel;
 use std::thread;
 
 mod inputthread;
-//use inputthread::input_thread;
+mod processing_thread;
+
+use inputthread::input_thread;
+use processing_thread::processing_thread;
 
 fn main() {
     let exit = Arc::new(AtomicBool::new(false)); // exit flag
-    let thread_exit = exit.clone(); // exit flag for capture thread
+    let input_exit = exit.clone(); // exit flag for capture thread
+    let process_exit = exit.clone(); // exit flag for capture thread
+    let (input_tx, process_rx) = sync_channel(1024); 
     
     /* bucause the input thread requires use input in the beginning, 
      * main thread has to wait until the input thread is done with user 
@@ -30,7 +35,9 @@ fn main() {
     // can proceed  
     *resume = false;
     // spawn input thread while holding the mutex
-    thread::spawn(move ||input_thread(thread_exit, proceed_clone));
+    thread::spawn(move ||input_thread(input_exit, proceed_clone, input_tx));
+    println!("spawning processing thread");
+    thread::spawn(move ||processing_thread(process_exit, process_rx));
     // wait to be signaled and when woken up, resume needs to be set to true
     while !*resume  {
         resume = condition_variable.wait(resume).unwrap();
