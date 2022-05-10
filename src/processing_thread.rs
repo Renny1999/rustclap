@@ -13,9 +13,11 @@ pub fn processing_thread (exit: Arc<AtomicBool>, rx: std::sync::mpsc::Receiver<P
     }
 }  
 
+/*
+ * Performs convolution with zero padding
+ * the output has length a.len() + b.len() - 1
+ */
 pub fn convolve(a: &[f32], b: &[f32]) -> Option<Vec<f32>> {
-// performs convolution with zero padding    
-// the output has length a.len() + b.len() - 1
     if a.len() == 0 || b.len() == 0 {
         return None;
     }

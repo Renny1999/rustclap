@@ -28,9 +28,9 @@ pub enum InputData<'a> {
 }
 
 pub fn input_thread (
-    exit: Arc::<AtomicBool>, 
+    exit:       Arc::<AtomicBool>, 
     main_ready: Arc::<(Mutex<bool>, Condvar)>, 
-    tx: std::sync::mpsc::SyncSender<Packet>
+    tx:         std::sync::mpsc::SyncSender<Packet>
 )
 {
     // acquire the mutex 
@@ -47,111 +47,118 @@ pub fn input_thread (
     let devices : Vec<cpal::Device> = devices.collect();
 
     println!("Select the input device:");
-    for num in 0..(&devices).len() {
-        let d = &devices[num as usize];
-        let name = match d.name() {
-            Ok(name) => name,
-            Err(_) => "no name".to_string(),
-        };
-        println!("{}\t{}", num, name);
+    if devices.len() == 0 {
+        println!("No device found.");
+        *resume = true;
+        condvar.notify_all();
+        drop(resume);
     }
+    else {
 
-    let mut selection = String::new();
-    std::io::stdin().read_line(&mut selection).unwrap();
-    println!("User input : {}", selection); 
+        for num in 0..(devices).len() {
+            let d = &devices[num as usize];
+            let name = match d.name() {
+                Ok(name) => name,
+                Err(_) => "no name".to_string(),
+            };
+            println!("{}\t{}", num, name);
+        }
 
-    let selection = selection.trim().parse::<u32>().unwrap();
-    println!("User selected {}", selection);
+        let mut selection = String::new();
+        std::io::stdin().read_line(&mut selection).unwrap();
+        println!("User input : {}", selection);
 
-    let device = &devices[selection as usize];  
-    println!("{}", device.name().unwrap());
-    let supported_configs_range = device.supported_input_configs()
-                                            .expect("error while qusrying configs");
-     
-    // store the supported configs in a vector  
-    let supported_configs_range: Vec::<cpal::SupportedStreamConfigRange> 
-                        = supported_configs_range.collect();
+        let selection = selection.trim().parse::<u32>().unwrap();
+        println!("User selected {}", selection);
 
-    for i in 0..supported_configs_range.len(){ 
-        let config = &supported_configs_range[i];    
-        let channels = config.channels();
-        let min_fs = config.min_sample_rate();
-        let max_fs = config.max_sample_rate();
+        let device = &devices[selection as usize]; 
+        println!("{}", device.name().unwrap());
+        let supported_configs_range = device.supported_input_configs()
+                                                .expect("error while qusrying configs");
+        
+        // store the supported configs in a vector 
+        let supported_configs_range: Vec::<cpal::SupportedStreamConfigRange>
+                            = supported_configs_range.collect();
 
-        let mut buffer_size = [0,0];
-        match config.buffer_size() {
-            cpal::SupportedBufferSize::Range{min, max} 
-            => {
-                    buffer_size[0] = *min;
-                    buffer_size[1] = *max;
-                    println!("{}", min);
-                    println!("{}", max);
+        for i in 0..supported_configs_range.len(){
+            let config = &supported_configs_range[i];   
+            let channels = config.channels();
+            let min_fs = config.min_sample_rate();
+            let max_fs = config.max_sample_rate();
+
+            let mut buffer_size = [0,0];
+            match config.buffer_size() {
+                cpal::SupportedBufferSize::Range{min, max}
+                => {
+                        buffer_size[0] = *min;
+                        buffer_size[1] = *max;
+                        println!("{}", min);
+                        println!("{}", max);
+                },
+                cpal::SupportedBufferSize::Unknown
+                => {},
+            };
+            let sample_format = match config.sample_format() {
+                cpal::SampleFormat::I16 => "I16",
+                cpal::SampleFormat::U16 => "U16",
+                cpal::SampleFormat::F32 => "F32",
+            };
+
+            println!("config {}\n\tchannels: {}\n\tmix fs: {}\n\tmax fs: {}\n\tformat : {}\n\tbuffer min : {}\n\tbuffer max : {}"
+                , i, channels, min_fs.0, max_fs.0, sample_format, buffer_size[0], buffer_size[1]);
+        }
+           
+        println!("Select a config :");
+
+        let mut selection = String::new();
+        std::io::stdin().read_line(&mut selection).unwrap();
+        let selection = selection.trim().parse::<u32>().unwrap();
+
+        println!("User input : {}", selection);
+
+        let selected_config = &supported_configs_range[selection as usize];
+        let config : cpal::StreamConfig = cpal::StreamConfig{
+            channels : selected_config.channels(),
+            sample_rate: selected_config.max_sample_rate(),
+            buffer_size: cpal::BufferSize::Default, // only this worked
+        };
+
+        // input thread is done with user input, so now the main thread can
+        // start asking for user input instead
+        *resume = true;   
+        // wake up the main thread
+        condvar.notify_all();
+        // forcefully drop the lock, because otherwise the mutex will be unlock
+        // at the end of the scope which we will never reach without giving main
+        // the privilage to ask for user input
+        drop(resume);
+
+        //let path = "output.raw";
+        //let mut output = File::create(path).unwrap();
+        let clonedtx = tx.clone();
+        let stream = device.build_input_stream (
+            &config.into(),
+            move |data : &[f32], _: &_| {
+                // pass data clap detection thread
+                tx.send(Packet::from_slice(data));
+
+                //match write_vec(&mut output, data) {
+                //    Ok(_) => {},
+                //    Err(_) => {panic!("error writing to file")},
+                //}
             },
-            cpal::SupportedBufferSize::Unknown 
-            => {},
+            move |err| {
+                // react to errors here
+                panic!("{}", err);
+            },
+        ).unwrap();
+        println!("stream created");
+        let _res = match stream.play(){
+            Ok(_) => {println!("should be playing at this time")},
+            Err(err) => panic!("{}",err),
         };
-        let sample_format = match config.sample_format() {
-            cpal::SampleFormat::I16 => "I16",
-            cpal::SampleFormat::U16 => "U16",
-            cpal::SampleFormat::F32 => "F32",
-        };
-
-        println!("config {}\n\tchannels: {}\n\tmix fs: {}\n\tmax fs: {}\n\tformat : {}\n\tbuffer min : {}\n\tbuffer max : {}"
-            , i, channels, min_fs.0, max_fs.0, sample_format, buffer_size[0], buffer_size[1]);
     }
-        
-    println!("Select a config :"); 
-
-    let mut selection = String::new();
-    std::io::stdin().read_line(&mut selection).unwrap();
-    let selection = selection.trim().parse::<u32>().unwrap();
-
-    println!("User input : {}", selection); 
-
-    let selected_config = &supported_configs_range[selection as usize];
-    let config : cpal::StreamConfig = cpal::StreamConfig{
-        channels : selected_config.channels(),
-        sample_rate: selected_config.max_sample_rate(),
-        buffer_size: cpal::BufferSize::Default, // only this worked
-    };
-
-    // input thread is done with user input, so now the main thread can 
-    // start asking for user input instead 
-    *resume = true;    
-    // wake up the main thread
-    condvar.notify_all();
-    // forcefully drop the lock, because otherwise the mutex will be unlock 
-    // at the end of the scope which we will never reach without giving main 
-    // the privilage to ask for user input
-    drop(resume);
-
-    //let path = "output.raw";
-    //let mut output = File::create(path).unwrap();
-    let clonedtx = tx.clone();
-    let stream = device.build_input_stream (
-        &config.into(),
-        move |data : &[f32], _: &_| {
-            // pass data clap detection thread
-            tx.send(Packet::from_slice(data));
-
-            //match write_vec(&mut output, data) {
-            //    Ok(_) => {}, 
-            //    Err(_) => {panic!("error writing to file")},
-            //}
-        }, 
-        move |err| {
-            // react to errors here
-            panic!("{}", err);
-        },
-    ).unwrap();
-    println!("stream created");
-    let _res = match stream.play(){
-        Ok(_) => {println!("should be playing at this time")},
-        Err(err) => panic!("{}",err), 
-    };
     while !exit.load(Ordering::Relaxed){};
-        
-    
 }
 
 fn write_vec(file: &mut File, samples: &[f32]) -> Result<(), std::io::Error> {

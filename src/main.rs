@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex, Condvar};
 use std::sync::atomic::{AtomicBool,Ordering};
 use std::sync::mpsc::sync_channel;
-use std::thread;
+use std::{thread, time};
 
 mod inputthread;
 mod processing_thread;
@@ -15,7 +15,7 @@ fn main() {
     let process_exit = exit.clone(); // exit flag for capture thread
     let (input_tx, process_rx) = sync_channel(1024); 
     
-    /* bucause the input thread requires use input in the beginning, 
+    /* because the input thread requires user input in the beginning, 
      * main thread has to wait until the input thread is done with user 
      * input before it can ask user to type 'exit' 
      * 
