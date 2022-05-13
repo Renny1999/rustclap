@@ -11,6 +11,7 @@ use std::io::Write;
 
 pub struct Packet {
     pub data: Vec::<f32>,
+    pub temp: Vec::<f32>,
 }
 
 impl Packet {
@@ -19,7 +20,7 @@ impl Packet {
         for d in slice {
             mydata.push(*d);
         }
-        Packet { data: mydata } 
+        Packet { data: mydata, temp: Vec::new()} 
     }  
 }
 

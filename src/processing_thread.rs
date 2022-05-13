@@ -6,10 +6,19 @@ use crate::inputthread::*;
 
 pub fn processing_thread (exit: Arc<AtomicBool>, rx: std::sync::mpsc::Receiver<Packet>) {   
     println!("{}", "Processing thread started");  
+    let mut packet: Packet;
     while !exit.load(Ordering::Relaxed) {
-       let data: Packet = rx.recv().unwrap();
-       let data: &[f32] = &data.data;
-       convolve(data, data);
+        packet = match rx.recv(){
+            Ok(p) => {
+                p
+            }
+            Err(_) => {
+                println!("failed to get data");
+                return;
+            }
+        };
+        let data = packet.data;
+        convolve(&data, &data);
     }
 }  
 
@@ -65,6 +74,12 @@ pub fn convolve(a: &[f32], b: &[f32]) -> Option<Vec<f32>> {
     }
 
     return Some(output);
+}
+
+pub fn correlate<T: >(a: &[T], b: &[T]) -> Option<Vec<T>> {
+    let mut res = Vec::<T>::new();
+
+    return Some()
 }
 
 #[test]
