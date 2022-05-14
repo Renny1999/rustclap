@@ -76,20 +76,31 @@ pub fn convolve(a: &[f32], b: &[f32]) -> Option<Vec<f32>> {
     return Some(output);
 }
 
-pub fn correlate<T: >(a: &[T], b: &[T]) -> Option<Vec<T>> {
-    let mut res = Vec::<T>::new();
+pub fn correlate(a: &[f32], b: &[f32]) -> Option<Vec<f32>> {
+    let res;
+    let reversed = reverse_slice(b).unwrap();
 
-    return Some()
+    res = convolve(a, &reversed);
+    res
+}
+
+pub fn reverse_slice<T: Copy>(a: &[T]) -> Option<Vec<T>> {
+    let mut res = Vec::<T>::with_capacity(a.len());
+    for num in a.iter().rev() {
+        res.push(*num);
+    }
+    
+    return Some(res);
 }
 
 #[test]
-fn short_and_long (){
+fn conv_short_and_long (){
     let res = convolve(&vec![2.,3.,4.], &vec![1.,2.,3.,4.]).unwrap();
     assert_eq!(res, vec![2., 7., 16., 25., 24., 16.]);
 }
 
 #[test]
-fn long_and_short (){
+fn conv_long_and_short (){
     let res = convolve(
         &vec![34.,123., -3.33, -3214.57, 43190., 194.], 
         &vec![-9824.432,2.,3.,4.]).unwrap();
@@ -97,7 +108,7 @@ fn long_and_short (){
 }
 
 #[test]
-fn same_length (){
+fn conv_same_length (){
     let res = convolve(
         &vec![1.,2.,3.,4.], 
         &vec![1.,2.,3.,4.]).unwrap();
@@ -105,9 +116,15 @@ fn same_length (){
 }
 
 #[test]
-fn zero_length (){
+fn conv_zero_length (){
     let res = convolve(
         &vec![], 
         &vec![1.,2.,3.,4.]);
     assert_eq!(res, None);
+}
+
+#[test]
+fn rev_whatever (){
+    let res = reverse_slice(&vec![1.,2.,3.,4.]).unwrap();
+    assert_eq!(&res, &vec![4.,3.,2.,1.]);
 }
