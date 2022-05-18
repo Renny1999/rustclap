@@ -124,6 +124,14 @@ fn conv_zero_length (){
 }
 
 #[test]
+fn corr_with_self (){
+    let res = correlate(
+        &vec![1.,2.,3.,4.,5.],
+        &vec![1.,2.,3.,4.,5.]).unwrap();
+    assert_eq!(res, vec![5.00,14.00,26.00,40.00,55.00,40.00,26.00,14.00,5.00]);
+}
+
+#[test]
 fn rev_whatever (){
     let res = reverse_slice(&vec![1.,2.,3.,4.]).unwrap();
     assert_eq!(&res, &vec![4.,3.,2.,1.]);
