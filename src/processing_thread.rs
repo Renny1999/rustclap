@@ -2,14 +2,15 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::sync_channel;
 use std::sync::{Arc, Mutex, Condvar};
 
-use crate::inputthread::*;
+use crate::inputthread::Packet;
+use crate::util;
 
 pub fn processing_thread (exit: Arc<AtomicBool>, rx: std::sync::mpsc::Receiver<Packet>) {   
     println!("{}", "Processing thread started");  
     while !exit.load(Ordering::Relaxed) {
        let data: Packet = rx.recv().unwrap();
        let data: &[f32] = &data.data;
-       convolve(data, data);
+
     }
 }  
 
