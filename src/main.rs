@@ -61,3 +61,4 @@ fn print_array(arr : &[f32]) {
         println!("{}", arr[i]);
     }
 }
+

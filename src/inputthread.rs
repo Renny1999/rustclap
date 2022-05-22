@@ -171,4 +171,3 @@ fn write_vec(file: &mut File, samples: &[f32]) -> Result<(), std::io::Error> {
     };
     file.write_all(samples_u8)
 }
-
