@@ -1,13 +1,24 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::sync_channel;
-use std::sync::{Arc, Mutex, Condvar};https://github.com/Renny1999/rustclap/pull/1/conflict?name=Cargo.lock&ancestor_oid=8977e63f9dc0248c49bb2b3bc3afcc3375166d2d&base_oid=1f3e0b6cf67d8c9979717079fbaaf46ca41c97ff&head_oid=8ce146ec6e63461f2a31232598e55d21bac9a3ef
+use std::sync::{Arc, Mutex, Condvar};
+use std::fs::File;
 
 use crate::inputthread::*;
+use crate::util::*;
 
 pub fn processing_thread (exit: Arc<AtomicBool>, rx: std::sync::mpsc::Receiver<Packet>) {   
+        
     println!("{}", "Processing thread started");  
     let mut packet: Packet;
+    let mut counter: i32 = 0;
+    let mut filename: String;
     while !exit.load(Ordering::Relaxed) {
+
+        /*  crate file name */
+        filename = format!("{}.raw", counter);
+        counter+=1;
+
+
         packet = match rx.recv(){
             Ok(p) => {
                 p
@@ -17,10 +28,15 @@ pub fn processing_thread (exit: Arc<AtomicBool>, rx: std::sync::mpsc::Receiver<P
                 return;
             }
         };
+        let mut outfile = match File::create(filename) {
+            Ok(f) => {f},
+            Err(_) => {panic!("failed to create output file")},
+        };
         let data = packet.data;
-        convolve(&data, &data);
+        // convolve(&data, &data);
+        write_vec(&mut outfile, &data).unwrap();
     }
-}  
+}
 
 /*
  * Performs convolution with zero padding

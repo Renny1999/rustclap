@@ -5,6 +5,7 @@ use std::{thread, time};
 
 mod inputthread;
 mod processing_thread;
+mod util;
 
 use inputthread::input_thread;
 use processing_thread::processing_thread;
