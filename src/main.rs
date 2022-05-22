@@ -1,11 +1,10 @@
 use std::sync::{Arc, Mutex, Condvar};
 use std::sync::atomic::{AtomicBool,Ordering};
 use std::sync::mpsc::sync_channel;
-use std::thread;
+use std::{thread, time};
 
 mod inputthread;
 mod processing_thread;
-mod util;
 
 use inputthread::input_thread;
 use processing_thread::processing_thread;
@@ -15,19 +14,19 @@ fn main() {
     let input_exit = exit.clone(); // exit flag for capture thread
     let process_exit = exit.clone(); // exit flag for capture thread
     let (input_tx, process_rx) = sync_channel(1024); 
-    
-    /* bucause the input thread requires use input in the beginning, 
+ 
+    /* because the input thread requires user input in the beginning, 
      * main thread has to wait until the input thread is done with user 
      * input before it can ask user to type 'exit' 
      * 
      * this will be accomplished with a mutex and condition variable    
-     */     
-        
+     */
+
     // mutex and condition variable 
     let proceed = Arc::new((Mutex::new(false), Condvar::new()));
     // mutex and condition variable for the input thread
     let proceed_clone = Arc::clone(&proceed);
-        
+
     // get the mutex and the condition variable 
     let (lock, condition_variable) = &*proceed;
     // acquire the MutexGuard (lock)    
@@ -43,9 +42,9 @@ fn main() {
     while !*resume  {
         resume = condition_variable.wait(resume).unwrap();
     }
-        
+
     // main thread may proceed
-    
+
     while !exit.load(Ordering::Relaxed) {
         let mut ans = String::new();
         std::io::stdin().read_line(&mut ans).unwrap();
@@ -62,3 +61,4 @@ fn print_array(arr : &[f32]) {
         println!("{}", arr[i]);
     }
 }
+
