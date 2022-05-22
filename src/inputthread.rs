@@ -158,8 +158,8 @@ pub fn input_thread (
             Ok(_) => {println!("should be playing at this time")},
             Err(err) => panic!("{}",err),
         };
+        while !exit.load(Ordering::Relaxed){};
     }
-    while !exit.load(Ordering::Relaxed){};
 }
 
 fn write_vec(file: &mut File, samples: &[f32]) -> Result<(), std::io::Error> {
