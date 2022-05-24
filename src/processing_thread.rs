@@ -12,10 +12,16 @@ pub fn processing_thread (exit: Arc<AtomicBool>, rx: std::sync::mpsc::Receiver<P
     let mut packet: Packet;
     let mut counter: i32 = 0;
     let mut filename: String;
+
+    filename = format!("output.raw");
+    let mut outfile = match File::create(filename) {
+        Ok(f) => {f},
+        Err(_) => {panic!("failed to create output file")},
+    };
+
     while !exit.load(Ordering::Relaxed) {
 
         /*  crate file name */
-        filename = format!("{}.raw", counter);
         counter+=1;
 
 
@@ -23,14 +29,9 @@ pub fn processing_thread (exit: Arc<AtomicBool>, rx: std::sync::mpsc::Receiver<P
             Ok(p) => {
                 p
             }
-            Err(_) => {
-                println!("failed to get data");
-                return;
+            Err(e) => {
+                panic!("{}", e);
             }
-        };
-        let mut outfile = match File::create(filename) {
-            Ok(f) => {f},
-            Err(_) => {panic!("failed to create output file")},
         };
         let data = packet.data;
         // convolve(&data, &data);

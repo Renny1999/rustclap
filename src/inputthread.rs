@@ -24,10 +24,6 @@ impl Packet {
     }  
 }
 
-pub enum InputData<'a> {
-    Data(&'a[f32]),
-}
-
 pub fn input_thread (
     exit:       Arc::<AtomicBool>, 
     main_ready: Arc::<(Mutex<bool>, Condvar)>, 
@@ -55,7 +51,6 @@ pub fn input_thread (
         drop(resume);
     }
     else {
-
         for num in 0..(devices).len() {
             let d = &devices[num as usize];
             let name = match d.name() {
@@ -134,19 +129,22 @@ pub fn input_thread (
         // the privilage to ask for user input
         drop(resume);
 
-        //let path = "output.raw";
-        //let mut output = File::create(path).unwrap();
+        let path = "output.raw";
+        let mut output = File::create(path).unwrap();
         let clonedtx = tx.clone();
         let stream = device.build_input_stream (
             &config.into(),
             move |data : &[f32], _: &_| {
                 // pass data clap detection thread
-                tx.send(Packet::from_slice(data));
+                match clonedtx.send(Packet::from_slice(data)) {
+                    Ok(_) => {},
+                    Err(e) => {println!("{}",e)},
+                };
 
-                //match write_vec(&mut output, data) {
+                // match write_vec(&mut output, data) {
                 //    Ok(_) => {},
                 //    Err(_) => {panic!("error writing to file")},
-                //}
+                // }
             },
             move |err| {
                 // react to errors here
@@ -154,12 +152,12 @@ pub fn input_thread (
             },
         ).unwrap();
         println!("stream created");
-        let _res = match stream.play(){
-            Ok(_) => {println!("should be playing at this time")},
+        match stream.play(){
+            Ok(_) => {println!("stream started")},
             Err(err) => panic!("{}",err),
         };
+        while !exit.load(Ordering::Relaxed){};
     }
-    while !exit.load(Ordering::Relaxed){};
 }
 
 fn write_vec(file: &mut File, samples: &[f32]) -> Result<(), std::io::Error> {
