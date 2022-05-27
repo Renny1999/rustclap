@@ -13,6 +13,9 @@ pub fn processing_thread (exit: Arc<AtomicBool>, rx: std::sync::mpsc::Receiver<P
     let mut counter: i32 = 0;
     let mut filename: String;
 
+    // 5 seconds worth of data
+    let mut buffer = Vec::<f32>::with_capacity(48000*5);
+
     filename = format!("output.raw");
     let mut outfile = match File::create(filename) {
         Ok(f) => {f},
@@ -20,10 +23,6 @@ pub fn processing_thread (exit: Arc<AtomicBool>, rx: std::sync::mpsc::Receiver<P
     };
 
     while !exit.load(Ordering::Relaxed) {
-
-        /*  crate file name */
-        counter+=1;
-
 
         packet = match rx.recv(){
             Ok(p) => {
@@ -35,7 +34,7 @@ pub fn processing_thread (exit: Arc<AtomicBool>, rx: std::sync::mpsc::Receiver<P
         };
         let data = packet.data;
         // convolve(&data, &data);
-        write_vec(&mut outfile, &data).unwrap();
+        // write_vec(&mut outfile, &data).unwrap();
     }
 }
 

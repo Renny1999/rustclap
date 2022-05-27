@@ -110,6 +110,7 @@ pub fn input_thread (
         std::io::stdin().read_line(&mut selection).unwrap();
         let selection = selection.trim().parse::<u32>().unwrap();
 
+
         println!("User input : {}", selection);
 
         let selected_config = &supported_configs_range[selection as usize];
