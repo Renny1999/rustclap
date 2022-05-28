@@ -15,6 +15,7 @@ pub fn processing_thread (exit: Arc<AtomicBool>, rx: std::sync::mpsc::Receiver<P
 
     // 5 seconds worth of data
     let mut buffer = Vec::<f32>::with_capacity(48000*5);
+    let mut buffi = 0;
 
     filename = format!("output.raw");
     let mut outfile = match File::create(filename) {
@@ -33,8 +34,36 @@ pub fn processing_thread (exit: Arc<AtomicBool>, rx: std::sync::mpsc::Receiver<P
             }
         };
         let data = packet.data;
-        // convolve(&data, &data);
-        // write_vec(&mut outfile, &data).unwrap();
+        
+        assert!(data.len() <= buffer.capacity());
+
+        let mut datai = 0;
+
+        // store the data into the buffer
+        while (datai < data.len())          // prevent i.o.o for data
+            && (buffi < buffer.capacity())  // buffer is now full
+        {
+            // add until the buffer is full
+            buffer[buffi] = data[datai];
+            datai+=1;
+            buffi+=1;
+        }
+
+        // check if buffer is full
+        if buffer.len() == buffer.capacity() {
+            // TODO: perform calculations
+
+            // Empty the Buffer
+            buffer.clear();
+            buffi = 0;
+        }
+
+        // put the rest of data into buffer
+        while datai < data.len() && buffi < buffer.capacity() {
+            buffer[buffi] = data[datai];
+            buffi+=1;
+            datai+=1;
+        }
     }
 }
 
