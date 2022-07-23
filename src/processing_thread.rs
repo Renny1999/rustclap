@@ -47,7 +47,7 @@ pub fn processing_thread (exit: Arc<AtomicBool>, rx: std::sync::mpsc::Receiver<P
             println!("data len: {}", data.len());
             // buffer[buffi] = data[datai];
             buffer.push(data[datai]);
-            
+
             datai+=1;
             buffi+=1;
         }

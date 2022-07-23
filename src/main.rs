@@ -1,8 +1,7 @@
 use std::sync::{Arc, Mutex, Condvar};
 use std::sync::atomic::{AtomicBool,Ordering};
 use std::sync::mpsc::sync_channel;
-use std::{thread, time};
-
+use std::thread;
 mod inputthread;
 mod processing_thread;
 mod util;
@@ -36,11 +35,11 @@ fn main() {
     // can proceed  
     *resume = false;
     // spawn input thread while holding the mutex
-    thread::spawn(move ||input_thread(input_exit, proceed_clone, input_tx));
+    thread::spawn(|| input_thread(input_exit, proceed_clone, input_tx));
     println!("spawning processing thread");
-    thread::spawn(move ||processing_thread(process_exit, process_rx));
+    thread::spawn(||processing_thread(process_exit, process_rx));
     // wait to be signaled and when woken up, resume needs to be set to true
-    while !*resume  {
+    while !*resume {
         resume = condition_variable.wait(resume).unwrap();
     }
 
@@ -57,9 +56,11 @@ fn main() {
     }
 }
 
+#[allow(unused)]
 fn print_array(arr : &[f32]) {
     for i in 0..arr.len() {
         println!("{}", arr[i]);
     }
 }
+
 

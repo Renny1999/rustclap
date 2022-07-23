@@ -1,10 +1,8 @@
 extern crate cpal;
 use cpal::traits::HostTrait;
 use cpal::traits::*;
-use std::io::Error;
 use std::sync::{Arc, Mutex, Condvar};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{sync_channel};
 
 use std::fs::File;
 use std::io::Write;
@@ -25,10 +23,9 @@ impl Packet {
 }
 
 pub fn input_thread (
-    exit:       Arc::<AtomicBool>, 
+    exit:       Arc::<AtomicBool>,
     main_ready: Arc::<(Mutex<bool>, Condvar)>, 
-    tx:         std::sync::mpsc::SyncSender<Packet>
-)
+    tx:         std::sync::mpsc::SyncSender<Packet>)
 {
     // acquire the mutex 
     let (lock,condvar) = &*main_ready;
@@ -131,7 +128,7 @@ pub fn input_thread (
         drop(resume);
 
         let path = "output.raw";
-        let mut output = File::create(path).unwrap();
+        let _output = File::create(path).unwrap();
         let clonedtx = tx.clone();
         let stream = device.build_input_stream (
             &config.into(),
