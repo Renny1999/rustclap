@@ -44,7 +44,7 @@ pub fn processing_thread (exit: Arc<AtomicBool>, rx: std::sync::mpsc::Receiver<P
             && (buffi < buffer.capacity())  // buffer is now full
         {
             // add until the buffer is full
-            println!("data len: {}", data.len());
+            // println!("data len: {}", data.len());
             // buffer[buffi] = data[datai];
             buffer.push(data[datai]);
 
