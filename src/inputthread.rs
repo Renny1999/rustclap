@@ -8,6 +8,8 @@ use std::sync::mpsc::{sync_channel};
 
 use std::fs::File;
 use std::io::Write;
+  
+const PREFIX: &str = "[INPUT]";
 
 pub struct Packet {
     pub data: Vec::<f32>,
@@ -31,8 +33,7 @@ pub enum InputData<'a> {
 pub fn input_thread (
     exit:       Arc::<AtomicBool>, 
     main_ready: Arc::<(Mutex<bool>, Condvar)>, 
-    tx:         std::sync::mpsc::SyncSender<Packet>
-)
+    tx:         std::sync::mpsc::SyncSender<Packet>)
 {
     // acquire the mutex 
     let (lock,condvar) = &*main_ready;
@@ -55,7 +56,6 @@ pub fn input_thread (
         drop(resume);
     }
     else {
-
         for num in 0..(devices).len() {
             let d = &devices[num as usize];
             let name = match d.name() {
@@ -77,6 +77,7 @@ pub fn input_thread (
         let supported_configs_range = device.supported_input_configs()
                                                 .expect("error while qusrying configs");
         
+        let default_configs_range = device.default_input_config().expect("error while quering configs");
         // store the supported configs in a vector 
         let supported_configs_range: Vec::<cpal::SupportedStreamConfigRange>
                             = supported_configs_range.collect();
@@ -134,19 +135,24 @@ pub fn input_thread (
         // the privilage to ask for user input
         drop(resume);
 
-        //let path = "output.raw";
-        //let mut output = File::create(path).unwrap();
-        let clonedtx = tx.clone();
+        let path = "out.raw";
+        let mut output = File::create(path).unwrap();
+        // let clonedtx = tx.clone();
         let stream = device.build_input_stream (
             &config.into(),
             move |data : &[f32], _: &_| {
                 // pass data clap detection thread
-                tx.send(Packet::from_slice(data));
+                // match tx.send(Packet::from_slice(data)) {
+                //   Ok(_) => {},
+                //   Err(e) => {
+                //     println!("{} {}", PREFIX, e);
+                //   }
+                // }
 
-                //match write_vec(&mut output, data) {
-                //    Ok(_) => {},
-                //    Err(_) => {panic!("error writing to file")},
-                //}
+                match write_vec(&mut output, data) {
+                   Ok(_) => {},
+                   Err(_) => {panic!("error writing to file")},
+                }
             },
             move |err| {
                 // react to errors here
@@ -155,14 +161,14 @@ pub fn input_thread (
         ).unwrap();
         println!("stream created");
         let _res = match stream.play(){
-            Ok(_) => {println!("should be playing at this time")},
+            Ok(_) => {println!("Stream started")},
             Err(err) => panic!("{}",err),
         };
     }
     while !exit.load(Ordering::Relaxed){};
 }
 
-fn write_vec(file: &mut File, samples: &[f32]) -> Result<(), std::io::Error> {
+pub fn write_vec(file: &mut File, samples: &[f32]) -> Result<(), std::io::Error> {
     let samples_u8 = unsafe {
         std::slice::from_raw_parts(
             samples.as_ptr() as *const u8,

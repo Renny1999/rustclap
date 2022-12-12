@@ -19,7 +19,7 @@ fn main() {
      * main thread has to wait until the input thread is done with user 
      * input before it can ask user to type 'exit' 
      * 
-     * this will be accomplished with a mutex and condition variable    
+     * this will be accomplished with a mutex and condition variable
      */
 
     // mutex and condition variable 

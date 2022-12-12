@@ -1,19 +1,38 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::sync_channel;
-use std::sync::{Arc, Mutex, Condvar};https://github.com/Renny1999/rustclap/pull/1/conflict?name=Cargo.lock&ancestor_oid=8977e63f9dc0248c49bb2b3bc3afcc3375166d2d&base_oid=1f3e0b6cf67d8c9979717079fbaaf46ca41c97ff&head_oid=8ce146ec6e63461f2a31232598e55d21bac9a3ef
+use std::sync::{Arc, Mutex, Condvar};
+use std::fs::File;
 
 use crate::inputthread::*;
+
+const PREFIX: &str = "PROCESSING";
 
 pub fn processing_thread (exit: Arc<AtomicBool>, rx: std::sync::mpsc::Receiver<Packet>) {   
     println!("{}", "Processing thread started");  
     let mut packet: Packet;
+
+    let mut file;
+    match std::fs::File::create("output.wav") {
+      Err(_e) => {
+        panic!("failed to create file");
+      },
+      Ok(f) => {
+        file = f;
+      }
+    }
     while !exit.load(Ordering::Relaxed) {
         packet = match rx.recv(){
             Ok(p) => {
-                p
+              println!("got data");
+              match write_vec(&mut file, &p.data) {
+                 Ok(_) => { println!("wrote to file") },
+                 Err(_) => {panic!("error writing to file")},
+              }
+              p
             }
-            Err(_) => {
-                println!("failed to get data");
+            Err(e) => {
+                println!("{} {}", PREFIX, e);
+                println!("{} failed to get data", PREFIX);
                 return;
             }
         };
